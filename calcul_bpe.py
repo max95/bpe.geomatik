@@ -40,7 +40,8 @@ cursor = conn.cursor()
 ##Parcourir les colonnes à la recherche des NB_
 for col in df.columns:
 	col_name_src = df[col].name
-	col_name_dst = "{}_TPS".format(col)
+	col_name_tps_dst = "{}_TPS".format(col)
+	col_name_com_dst = "{}_COM_EQUIP".format(col)
 	#df_final.loc[:, col_name_dst] = 0
 
 	if (col_name_src[0:3] == "NB_"): #Si unr colonne commene par NB_, on continu le traitement
@@ -48,30 +49,36 @@ for col in df.columns:
 
 		#Obtenir la liste des communes disposant de la ressource
 		df_equip = (df.loc[df[col_name_src]>0,:])
-		
+
 		#Creation d'une variable contenant les communes équipées de la ressource
 		liste_equip = df_equip["CODGEO"].tolist()
-			
+
 		with tqdm(total=len(df)) as pbar:
 			#Recherche de la commune la plus proche et récupération du tps de parcours
 			for index, row in df.iterrows():
-				query_sql = "SELECT \"TPS\" from matrice_depcom WHERE \"DEPCOM_START\" = '{}' AND \"DEPCOM_STOP\" IN {} order BY \"TPS\" limit 1".format(row['CODGEO'], repr(tuple(map(str,liste_equip))))
-            
+				query_sql = "SELECT \"TPS\", \"DEPCOM_STOP\" from matrice_depcom WHERE \"DEPCOM_START\" = '{}' AND \"DEPCOM_STOP\" IN {} order BY \"TPS\" limit 1".format(row['CODGEO'], repr(tuple(map(str,liste_equip))))
+
 				try:
 					cursor.execute(query_sql, liste_equip)
-					TPS = cursor.fetchone()[0]
+					result = cursor.fetchall()
+					for row2 in result:
+						TPS = row2[0]
+						#print (TPS)
+						COM_EQUIP = row2[1]
+						#print (COM_EQUIP)
 				except:
 					TPS = ''
-								
+					COM_EQUIP = ''
+
 				#Mise à jour du tableau
-				df_final.loc[df_final['CODGEO'] == row['CODGEO'] , col_name_dst] = TPS
-            
+				df_final.loc[df_final['CODGEO'] == row['CODGEO'] , col_name_tps_dst] = TPS
+				df_final.loc[df_final['CODGEO'] == row['CODGEO'] , col_name_com_dst] = COM_EQUIP
 				#liste_resultat.append(TPS)
 				pbar.update(1)
-            
+
 		nom_fichier = "{}.csv".format(col_name_src)
-		df_final.to_csv(nom_fichier, encoding='utf-8')
-df_final.sort_index(axis = 1, ascending = True)
-file_name_dst = '.'.join(file_name_src.split('.')[:-1])			
+		#df_final.to_csv(nom_fichier, encoding='utf-8')
+df_final = df_final.sort_index(axis = 1, ascending = True)
+file_name_dst = '.'.join(file_name_src.split('.')[:-1])
 file_name_dst = "{}_time.csv".format(file_name_dst)
-df_final.to_csv(file_name_dst, encoding='utf-8')	
+df_final.to_csv(file_name_dst, encoding='utf-8')
