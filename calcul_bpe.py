@@ -46,7 +46,6 @@ for col in df.columns:
 
 	if (col_name_src[0:3] == "NB_"): #Si unr colonne commene par NB_, on continu le traitement
 		liste_equip = []    #Variable pour une de commune disposant de la ressource et RAZ
-		df_final[col_name_com_dst] = np.nan
 
 		#Obtenir la liste des communes disposant de la ressource
 		df_equip = (df.loc[df[col_name_src]>0,:])
